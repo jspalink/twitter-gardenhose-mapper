@@ -10,5 +10,11 @@ setup(
     author='Jonathan Spalink',
     author_email='jspalink@econtext.ai',
     description='Filter the twitter stream, and simply run it through the eContext API in order to publish content to eContext Kafka Stream',
-    install_requires=['tweepy', 'econtextapi']
+    install_requires=['tweepy', 'econtextapi'],
+    
+    entry_points={
+        'console_scripts': [
+            'twitter-gardenhose = twitter_gardenhose_mapper.main:main'
+        ]
+    }
 )
