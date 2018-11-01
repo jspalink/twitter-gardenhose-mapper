@@ -3,6 +3,7 @@ import time
 from threading import Thread
 
 import tweepy
+import json
 from econtext.util.config import load_config, update_config, config_get
 from econtext.util.log import log, log_add_stream_handler
 
@@ -50,12 +51,23 @@ def get_econtext_api(access_key, access_secret, baseurl="https://api.econtext.co
     return Client(access_key, access_secret, baseurl=baseurl)
 
 
-def map_threads(q, econtext, tpc=500):
+def map_threads(q, econtext, tpc=500, thread_id=0):
     working = True
     tweets = []
     total_tweets = 0
+    social = Social(econtext, None)
     while working:
         try:
+            if len(tweets) == tpc:
+                social = Social(econtext, tweets)
+                social.data['stream_meta'] = {"namespace": "econtext.social.twitter.gardenhose"}
+                social.data['source_language'] = 'auto'
+                social.data['sentiment'] = False
+                results = social.get_results()
+                total_tweets += tpc
+                tweets = []
+                log.info("{} - Mapping {} tweets in {} seconds - thread total: {}".format(thread_id, tpc, social.get_duration(), total_tweets))
+            
             if q.empty():
                 time.sleep(1)
             else:
@@ -63,17 +75,10 @@ def map_threads(q, econtext, tpc=500):
                 if w is None:
                     working = False
                 tweets.append(w.text)
-                if len(tweets) == tpc:
-                    social = Social(econtext, tweets)
-                    social.data['stream_meta'] = {"namespace": "econtext.social.twitter.gardenhose"}
-                    social.data['source_language'] = 'auto'
-                    social.data['sentiment'] = False
-                    results = social.get_results()
-                    total_tweets += tpc
-                    tweets = []
-                    log.info("Mapping {} tweets in {} seconds - thread total: {}".format(tpc, social.get_duration(), total_tweets))
         except:
-            log.exception("An error occurred during map_threads")
+            log.exception("{} - An error occurred during map_threads".format(thread_id))
+            log.error("Content for the POST is: {}".format(json.dumps(social.get_data())))
+            time.sleep(1)  # wait a sec before we try again...
     
     # signal to the queue that task has been processed
     q.task_done()
@@ -128,7 +133,7 @@ def main():
 
         for i in range(num_threads):
             log.debug('Starting thread {}'.format(i))
-            worker = Thread(target=map_threads, args=(q, econtext, tpc))
+            worker = Thread(target=map_threads, args=(q, econtext, tpc, i))
             worker.setDaemon(True)
             worker.start()
 
