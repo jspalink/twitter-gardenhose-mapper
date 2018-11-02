@@ -67,6 +67,7 @@ def map_threads(q, econtext, tpc=500, thread_id=0):
                 total_tweets += tpc
                 tweets = []
                 log.info("{} - Mapping {} tweets in {} seconds - thread total: {}".format(thread_id, tpc, social.get_duration(), total_tweets))
+                continue
             
             if q.empty():
                 time.sleep(1)
@@ -130,20 +131,33 @@ def main():
 
         track = [x.strip() for x in config_get(config, 'config', 'filter_words').split(",")]
         languages = [x.strip() for x in config_get(config, 'config', 'filter_languages').split(",")]
-
+        
+        workers = []
         for i in range(num_threads):
             log.debug('Starting thread {}'.format(i))
             worker = Thread(target=map_threads, args=(q, econtext, tpc, i))
             worker.setDaemon(True)
             worker.start()
+            workers.append(worker)
 
         stream.filter(track=track, languages=languages)
             
     except Exception:
         log.exception("Caught an Exception...")
-        q.join()
+        while True:
+            q.put_nowait(None)
+            for i in range(len(workers)):
+                workers[i].join(timeout=2)
+                if not workers[i].is_alive():
+                    log.info("Worker thread {} finished".format(workers[i].ident))
+                    workers[i] = None
+            workers = [w for w in workers if w is not None]
+            if len(workers) == 0:
+                break
     
+    q.join()
     log.info("Finished...")
+
 
 if __name__ == '__main__':
     main()
