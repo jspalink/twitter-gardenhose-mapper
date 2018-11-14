@@ -26,6 +26,30 @@ class MyStreamListener(tweepy.StreamListener):
     def on_error(self, status_code):
         log.error("Caught a status_code: {}".format(status_code))
 
+    def on_exception(self, exception):
+        """Called when an unhandled exception occurs."""
+        log.warning("on_exception: An exception occurred: {}".format(exception))
+        return
+    
+    def on_timeout(self):
+        """Called when stream connection times out"""
+        log.warning("on_timeout: was called")
+        return
+    
+    def on_disconnect(self, notice):
+        """Called when twitter sends a disconnect notice
+        Disconnect codes are listed here:
+        https://dev.twitter.com/docs/streaming-apis/messages#Disconnect_messages_disconnect
+        """
+        log.warning("on_disconnect: A disconnect notice was sent: {}".format(notice))
+        log.debug("Disconnect codes are listed here: https://dev.twitter.com/docs/streaming-apis/messages#Disconnect_messages_disconnect")
+        return
+    
+    def on_warning(self, notice):
+        """Called when a disconnection warning message arrives"""
+        log.warning("on_warning: A warning was sent: {}".format(notice))
+        return
+
 
 # eContext Objects
 ################################################################################
