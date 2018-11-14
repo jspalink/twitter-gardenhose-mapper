@@ -73,16 +73,18 @@ def map_threads(q, econtext, tpc=500, thread_id=0):
                 time.sleep(1)
             else:
                 w = q.get()
+                q.task_done()
                 if w is None:
                     working = False
-                tweets.append(w.text)
+                else:
+                    tweets.append(w.text)
         except:
             log.exception("{} - An error occurred during map_threads".format(thread_id))
             log.error("Content for the POST is: {}".format(json.dumps(social.get_data())))
             time.sleep(1)  # wait a sec before we try again...
     
     # signal to the queue that task has been processed
-    q.task_done()
+    log.info("Thread {} is shutting down...".format(thread_id))
     return True
 
 
@@ -143,7 +145,7 @@ def main():
         stream.filter(track=track, languages=languages)
             
     except Exception:
-        log.exception("Caught an Exception...")
+        log.exception("Caught an Exception in main.py ...")
         while True:
             q.put_nowait(None)
             for i in range(len(workers)):
@@ -153,6 +155,7 @@ def main():
                     workers[i] = None
             workers = [w for w in workers if w is not None]
             if len(workers) == 0:
+                q.join()
                 break
     
     q.join()
