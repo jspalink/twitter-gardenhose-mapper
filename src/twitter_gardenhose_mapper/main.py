@@ -75,7 +75,7 @@ def get_econtext_api(access_key, access_secret, baseurl="https://api.econtext.co
     return Client(access_key, access_secret, baseurl=baseurl)
 
 
-def map_threads(q, econtext, tpc=500, thread_id=0):
+def map_threads(q, econtext, tpc=500, thread_id=0, sentiment=False, *args, **kwargs):
     working = True
     tweets = []
     total_tweets = 0
@@ -86,7 +86,7 @@ def map_threads(q, econtext, tpc=500, thread_id=0):
                 social = Social(econtext, tweets)
                 social.data['stream_meta'] = {"namespace": "econtext.social.twitter.gardenhose"}
                 social.data['source_language'] = 'auto'
-                social.data['sentiment'] = False
+                social.data['sentiment'] = sentiment
                 results = social.get_results()
                 total_tweets += tpc
                 tweets = []
@@ -125,6 +125,7 @@ def main():
     parser.add_argument("--econtext-baseurl", dest="config_econtext_baseurl", help="eContext API base URL", metavar="URL")
     parser.add_argument("-t", "--threads", dest="config_threads", default=10, help="Number of eContext threads to dedicate to mapping", metavar="INT")
     parser.add_argument("--tpc", dest="config_tpc", default=500, help="Number of tweets to include in each eContext call", metavar="INT")
+    parser.add_argument("-s", "--sentiment", dest="config_sentiment", default=False, action="store_true", help="Include sentiment in results (increases latency)")
 
     options = parser.parse_args()
     log_add_stream_handler(options.config_verbose)
@@ -151,6 +152,7 @@ def main():
         num_threads = int(config_get(config, 'config', 'threads'))
         tpc = int(config_get(config, 'config', 'tpc'))
         listener = MyStreamListener(q)
+        sentiment = config_get(config, 'config', 'sentiment')
         auth = tweepy.OAuthHandler(config_get(config, 'config', 'consumer_key'), config_get(config, 'config', 'consumer_secret'))
         auth.set_access_token(config_get(config, 'config', 'access_token_key'), config_get(config, 'config', 'access_token_secret'))
         stream = tweepy.Stream(auth, listener)
@@ -161,7 +163,7 @@ def main():
         workers = []
         for i in range(num_threads):
             log.debug('Starting thread {}'.format(i))
-            worker = Thread(target=map_threads, args=(q, econtext, tpc, i))
+            worker = Thread(target=map_threads, args=(q, econtext, tpc, i, sentiment))
             worker.setDaemon(True)
             worker.start()
             workers.append(worker)
