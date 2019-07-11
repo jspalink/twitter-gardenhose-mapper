@@ -59,7 +59,7 @@ class MyStreamListener(tweepy.StreamListener):
 ################################################################################
 default_config = {
     'filter_words': 'the, i, to, a, and, is, in, it, you, of',
-    'filter_languages': 'en, es, zh, jp, pt, ru, ar',
+    'filter_languages': 'en, es, de, fr, pt, ru, tr',
     'filter_locations': '',  # England = -6.3799,49.8712,1.7690,55.8117
     'consumer_key': '',
     'consumer_secret': '',
@@ -107,6 +107,7 @@ def map_threads(q, econtext, tpc=500, thread_id=0, sentiment=False, *args, **kwa
             log.exception("{} - An error occurred during map_threads".format(thread_id))
             log.error("Content for the POST is: {}".format(json.dumps(social.get_data())))
             time.sleep(1)  # wait a sec before we try again...
+            tweets = []
     
     # signal to the queue that task has been processed
     log.info("Thread {} is shutting down...".format(thread_id))
@@ -127,6 +128,7 @@ def main():
     parser.add_argument("-t", "--threads", dest="config_threads", default=10, help="Number of eContext threads to dedicate to mapping", metavar="INT")
     parser.add_argument("--tpc", dest="config_tpc", default=500, help="Number of tweets to include in each eContext call", metavar="INT")
     parser.add_argument("-s", "--sentiment", dest="config_sentiment", default=False, action="store_true", help="Include sentiment in results (increases latency)")
+    parser.add_argument("-l", "--languages", dest="config_filter_languages", default=None, help="Language codes to include")
 
     options = parser.parse_args()
     log_add_stream_handler(options.config_verbose)
@@ -160,7 +162,7 @@ def main():
 
         track = [x.strip() for x in config_get(config, 'config', 'filter_words').split(",")]
         languages = [x.strip() for x in config_get(config, 'config', 'filter_languages').split(",")]
-        locations = [x.strip() for x in config_get(config, 'config', 'filter_locations').split(";")]
+        locations = [float(x.strip()) for x in config_get(config, 'config', 'filter_locations').split(",")]
         
         workers = []
         for i in range(num_threads):
