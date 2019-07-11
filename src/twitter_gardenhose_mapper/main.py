@@ -58,7 +58,7 @@ class MyStreamListener(tweepy.StreamListener):
 # code that you commit to github.
 ################################################################################
 default_config = {
-    'filter_words': 'the, i, to, a, and, is, in, it, you, of',
+    'filter_words': 'the, i, to, a, and, is, in, it, you, of, ich, ein, de, la, el, и, être, je',
     'filter_languages': 'en, es, de, fr, pt, ru, tr',
     'filter_locations': '',  # England = -6.3799,49.8712,1.7690,55.8117
     'consumer_key': '',
@@ -106,7 +106,6 @@ def map_threads(q, econtext, tpc=500, thread_id=0, sentiment=False, *args, **kwa
         except:
             log.exception("{} - An error occurred during map_threads".format(thread_id))
             log.error("Content for the POST is: {}".format(json.dumps(social.get_data())))
-            time.sleep(1)  # wait a sec before we try again...
             tweets = []
     
     # signal to the queue that task has been processed
