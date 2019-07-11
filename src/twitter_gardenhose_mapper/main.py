@@ -60,6 +60,7 @@ class MyStreamListener(tweepy.StreamListener):
 default_config = {
     'filter_words': 'the, i, to, a, and, is, in, it, you, of',
     'filter_languages': 'en, es, zh, jp, pt, ru, ar',
+    'filter_locations': '',  # England = -6.3799,49.8712,1.7690,55.8117
     'consumer_key': '',
     'consumer_secret': '',
     'access_token_key': '',
@@ -159,6 +160,7 @@ def main():
 
         track = [x.strip() for x in config_get(config, 'config', 'filter_words').split(",")]
         languages = [x.strip() for x in config_get(config, 'config', 'filter_languages').split(",")]
+        locations = [x.strip() for x in config_get(config, 'config', 'filter_locations').split(";")]
         
         workers = []
         for i in range(num_threads):
@@ -167,8 +169,11 @@ def main():
             worker.setDaemon(True)
             worker.start()
             workers.append(worker)
-
-        stream.filter(track=track, languages=languages)
+        
+        if locations:
+            stream.filter(locations=locations, languages=languages)
+        else:
+            stream.filter(track=track, languages=languages)
             
     except Exception:
         log.exception("Caught an Exception in main.py ...")
